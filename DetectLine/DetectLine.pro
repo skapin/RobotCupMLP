@@ -2,6 +2,9 @@ MOC_DIR = .moc
 OBJECTS_DIR = .obj
 TEMPLATE = app
 SOURCES = main.cpp
+
+
+TARGET = DetectLine
 CONFIG += qt \
     warn_on
 INCLUDEPATH += /usr/local/include/opencv2
