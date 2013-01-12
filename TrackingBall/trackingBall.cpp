@@ -283,17 +283,27 @@ int ballTracking(char*name)
           x2 = x2/n2;
           y2 = y2/n2;
 
-
+          if(std::abs(x-x2) < 15 && std::abs(y-y2) <15)
+          {
+              x = x*n + x2*n2;
+              y = y*n +y2*n2;
+              x = x/(n+n2);
+              y = y/(n+n2);
+              if(bary.x >= 20 && bary.y >=20)
+                circle(edges2, bary, 15, Scalar(0,0,255), 2);
+          }
+          else
+          {
           bary.x = x;
           bary.y = y;
 
           bary2.x = x2;
           bary2.y = y2;
-          if(bary.x >= 20 && bary.y >=20)
+          if(bary.x >= 20 && bary.y >=20 && n>25)
             circle(edges2, bary, 15, Scalar(0,0,255), 2);
-          if(bary2.x >= 20 && bary2.y >=20)
+          if(bary2.x >= 20 && bary2.y >=20 && n2>25)
             circle(edges2, bary2, 15, Scalar(0,0,255), 2);
-
+           }
           //Kalman filter test http://www.morethantechnical.com/2011/06/17/simple-kalman-filter-for-tracking-using-opencv-2-2-w-code/
 
 
