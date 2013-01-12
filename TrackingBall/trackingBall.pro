@@ -11,4 +11,3 @@ INCLUDEPATH += /user/local/include/opencv2
 LIBS += -lopencv_core\
         -lopencv_highgui\
         -lopencv_video\
-OTHER_FILES += readme

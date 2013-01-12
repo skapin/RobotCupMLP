@@ -208,13 +208,45 @@ int ballTracking(char*name)
 
       namedWindow("video",1);
       namedWindow("video2",1);
-      createTrackbar("bar","video", &pos,fc,skip,&cap);
+
+
+
+      KalmanFilter KF(4, 2, 0);
+      KF.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,1,0,   0,1,0,1,  0,0,1,0,  0,0,0,1);
+      Mat_<float> measurement(2,1);
+      measurement.setTo(Scalar(0));
+
+      // init...
+      KF.statePre.at<float>(0) = 0;
+      KF.statePre.at<float>(1) = 0;
+      KF.statePre.at<float>(2) = 0;
+      KF.statePre.at<float>(3) = 0;
+      setIdentity(KF.measurementMatrix);
+      setIdentity(KF.processNoiseCov, Scalar::all(1e-4));
+      setIdentity(KF.measurementNoiseCov, Scalar::all(1e-1));
+      setIdentity(KF.errorCovPost, Scalar::all(.1));
+
+
+      //createTrackbar("bar","video", &pos,fc,skip,&cap);
       while(1)
         {
-          setTrackbarPos("bar","video",getTrackbarPos("bar","video")+1);
+          //setTrackbarPos("bar","video",getTrackbarPos("bar","video")+1);
 
           cap >> edges;
           edges.copyTo(edges2);
+          Point bary;
+          bary.x = 0;
+          bary.y = 0;
+          Point bary2;
+          bary2.x = 0;
+          bary2.y = 0;
+          int n = 0;
+          double x = 0;
+          double y = 0;
+          int n2 = 0;
+          double x2 = 0;
+          double y2 = 0;
+
 
           for(int i=0;i<edges.rows;i++)
               for(int j=0;j<edges.cols;j++)
@@ -228,32 +260,65 @@ int ballTracking(char*name)
                 else
                 {
 
-                        edges2.at<Vec3b>(i,j)[0]=0;
-                        edges2.at<Vec3b>(i,j)[1]=0;
-                        edges2.at<Vec3b>(i,j)[2]=255;
+                        //edges2.at<Vec3b>(i,j)[0]=0;
+                        //edges2.at<Vec3b>(i,j)[1]=0;
+                        //edges2.at<Vec3b>(i,j)[2]=255;
+                    if(std::abs(j-edges.cols/4) < std::abs(j-3*edges.cols/4))
+                    {
+                        n++;
+                        x += j;
+                        y += i;
+                    }
+                    else
+                    {
+                        n2++;
+                        x2 += j;
+                        y2 += i;
+                    }
                 }
 
-              }
-          /*vector<Vec3f> circles;
-          cvtColor(edges, edges, CV_BGR2GRAY);
-          HoughCircles(edges, circles, CV_HOUGH_GRADIENT, 1, 200, 100,100,0, 500 );
+             }
+          x = x/n;
+          y = y/n;
+          x2 = x2/n2;
+          y2 = y2/n2;
 
-          for( size_t i = 0; i < circles.size(); i++ )
-          {
-               Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-               int radius = cvRound(circles[i][2]);
-               // draw the circle center
-               circle( edges, center, 3, Scalar(0,255,0), -1, 8, 0 );
-               // draw the circle outline
-               circle( edges, center, radius, Scalar(0,0,255), 3, 8, 0 );
-          }
-          //absdiff(edges,edges2,diff);
 
-          cout << circles.size() << endl;*/
+          bary.x = x;
+          bary.y = y;
+
+          bary2.x = x2;
+          bary2.y = y2;
+          if(bary.x >= 20 && bary.y >=20)
+            circle(edges2, bary, 15, Scalar(0,0,255), 2);
+          if(bary2.x >= 20 && bary2.y >=20)
+            circle(edges2, bary2, 15, Scalar(0,0,255), 2);
+
+          //Kalman filter test http://www.morethantechnical.com/2011/06/17/simple-kalman-filter-for-tracking-using-opencv-2-2-w-code/
+
+
+
+
+
+          // First predict, to update the internal statePre variable
+          Mat prediction = KF.predict();
+          Point predictPt(prediction.at<float>(0),prediction.at<float>(1));
+
+          // Get mouse point
+          measurement(0) = bary.x;
+          measurement(1) = bary.y;
+
+          Point measPt(measurement(0),measurement(1));
+
+          // The "correct" phase that is going to use the predicted value and our measurement
+          Mat estimated = KF.correct(measurement);
+          Point statePt(estimated.at<float>(0),estimated.at<float>(1));
+            
+          circle(edges, statePt, 2, Scalar(255,255,255), -1);
+          //kalman filter end
+
 
           Mat element = getStructuringElement( MORPH_RECT,Size( 3, 3 ),Point( 2, 2 ) );
-
-
           dilate(edges, edges,element );
           erode(edges, edges,element );
           dilate(edges, edges,element );
