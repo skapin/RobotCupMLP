@@ -8,6 +8,8 @@ TARGET = DetectLine
 CONFIG += qt \
     warn_on
 INCLUDEPATH += /usr/local/include/opencv2
+
+CXXFLAGS += -O2
 LIBS += -lopencv_core \
     -lopencv_highgui \
     -lopencv_features2d \
