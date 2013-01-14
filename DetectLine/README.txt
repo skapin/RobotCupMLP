@@ -1,4 +1,4 @@
-Autheurs :  Quentin MAOUHOUB
+Auteurs :  Quentin MAOUHOUB
             Florian BOUDINET
 
 Date : Decembre 2012
@@ -24,3 +24,12 @@ detectLinePoints() Permet de detecter les lignes du terrain.
 detectLinePoints_glitch() utilise le meme algorithme mais ne trouve pas les points d'intersection ligne/terrain (blanc/vert). Il se contente de peindre le vert, le blanc, le noir et (le bleu). Mais le resultat est assez concluant.
 
 
+
+_______________________________
+______Utilisation
+
+$> make
+$> ./DetectLine ${VIDEO_PATH}
+
+
+Ou alors ouvrir le *.pro avec QtCreator.
