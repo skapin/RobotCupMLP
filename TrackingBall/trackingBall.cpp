@@ -17,7 +17,10 @@ int ballTracking(char*name)
     VideoCapture cap;
       cap.open(name);
       if(!cap.isOpened())  // check if we succeeded
-        return -1;
+	{
+	  cout << "Unable to read specified video file" << endl;
+	  return EXIT_FAILURE;
+	}
       Mat edges;
       Mat edges2;
       cap >> edges;
@@ -193,6 +196,14 @@ int ballTracking(char*name)
 
 int main(int argc, char*argv[])
 {
-    ballTracking(argv[1]);
-    return 0;
+  if(argc != 2)
+    {
+      cout << "Usage : ./trackingBall path_to_video" << endl;
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      ballTracking(argv[1]);
+      return EXIT_SUCCESS;
+    }
 }
