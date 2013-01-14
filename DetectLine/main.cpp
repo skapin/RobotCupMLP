@@ -218,8 +218,18 @@ bool near_Vec3b_3channel_ratio(Vec3b a, Vec3b b, float c1, float c2, float c3)
 
 bool near_Vec3b_3channel_sub(Vec3b a, Vec3b b, float c1, float c2, float c3)
 {
-    return ( nearf( abs(a[0]-a[1]), abs(b[0]-b[1]),c1) &&  nearf( abs(a[0]-a[2]), abs(b[0]-b[2]),c1) && nearf( abs(a[2]-a[1]), abs(b[2]-b[1]),c1) );
+    return ( nearf( abs(a[0]-a[1]), abs(b[0]-b[1]),c1) &&  nearf( abs(a[0]-a[2]), abs(b[0]-b[2]),c2) && nearf( abs(a[2]-a[1]), abs(b[2]-b[1]),c3) );
 }
+
+bool is_green(Vec3b a, float red_blue, float green_intensity)
+{
+    return (abs(a[0]-a[2]) < red_blue) && (a[1] > (a[0] + green_intensity)) && (a[1] > (a[2] + green_intensity));
+}
+bool is_blue(Vec3b a, float red_green, float blue_intensity)
+{
+    return (abs(a[1]-a[2]) < red_green) && (a[0] > (a[1] + blue_intensity)) && (a[0] > (a[2] + blue_intensity));
+}
+
 
 
 
@@ -385,54 +395,6 @@ void draw_affine( Mat& input, Mat& output, vector<Point> ptns, Scalar color, int
         }
     }
     line(output, ptns[start], ptns[end], Scalar(0,250,0),2);
-    
-
-
-
-
-
-
-
-
-
-
-
-
-    /*  Point next_point;
-    Point previous_valid_point = ptns[0];
-    for(i=0;(ptns.size() != 0 ) && (i<ptns.size()-1);i++)
-    {
-        bool valid = false;
-        int t=1;
-
-        while ( i+t < ptns.size() && !dist_ok(ptns[i], ptns[i+t], 2*decalx)  )
-        {
-            valid = true;
-            t++;
-        }
-        if ( valid )
-        {
-            next_point = ptns[i+t];
-            nbpoints++;
-            atemp = ((float)(next_point).y - (ptns[i]).y) /((next_point).x - (ptns[i]).x);
-            if(a == 0 || (atemp/a < 1.2 && atemp/a >0.8))
-            {
-                previous_valid_point = next_point;
-                a = ((nbpoints -1)*a + atemp)/(nbpoints);
-            }
-
-        else if( nbpoints > 0)
-        {
-            cout<<"*"<<endl;
-            line(output, ptns[start], previous_valid_point, color, 5);
-        }
-        a = 0;
-        start = i;
-        nbpoints = 0;
-        previous_valid_point = ptns[start];
-
-
-    }*/
  }
 
 bool light_near(Vec3b a, Vec3b b, Vec3b a_perfect, Vec3b b_perfect, float delta)
@@ -447,7 +409,8 @@ bool light_near(Vec3b a, Vec3b b, Vec3b a_perfect, Vec3b b_perfect, float delta)
 
 #define VERT 0x00000001
 #define BLANC 0x00000002
-#define  UNK 0x00000004
+#define BLEU 0x00000004
+#define  UNK 0x00000008
 void detectLinePoints (Mat& input, Vec3b color1, Vec3b color2, int slices){
     int i,x=input.cols - 10,y=input.rows-10, decalx = input.cols/slices ;
     int state = 0, previous_state = 0;
@@ -472,21 +435,8 @@ void detectLinePoints (Mat& input, Vec3b color1, Vec3b color2, int slices){
             previous_state = state;
             state = 0;
             Vec3b color = input.at<Vec3b>(y,x);
-            /*          color[0] = color[0]/2;
-            color[1] = color[1]/2;
-            color[2] = color[2]/2;
 
-            color[0] = (int)color[0] + (int)(input.at<Vec3b>(y+1,x)[0])/2;
-            color[1] = (int)color[0] + (int)(input.at<Vec3b>(y+1,x)[1])/2;
-            color[2] = (int)color[0] +(int)(input.at<Vec3b>(y+1,x)[2]/2);
-*/
-            // rectangle(img_out,Rect( Point(x-4,y),Point(x+4,y+1) ),Scalar(10,10,10),1);
-            /**
-              * Param  80,80 = near_Vec3b
-              *
-              **/
-            // if(near_Vec3b_3channel_ratio(color1, color,0.30,0.30,0.30) && near_Vec3b_3channel(color1, color,80,80,80))
-            if(near_Vec3b_3channel_sub(color1, color,70,30,30) && near_Vec3b_3channel(color1, color,120,120,120))
+            if(near_Vec3b_3channel_sub(color1, color,70,70,70) && near_Vec3b_3channel(color1, color,120,120,120))
             {
                 if(previous_state == VERT)
                     state = 3;
@@ -495,8 +445,7 @@ void detectLinePoints (Mat& input, Vec3b color1, Vec3b color2, int slices){
                 white_found = color;
                 rectangle(img_out,Rect( Point(x-4,y),Point(x+4,y+1) ),Scalar(250,250,250),1);
             }
-            //if (near_Vec3b_3channel_ratio(color2, color,1.0,1.00,1.00) /*&& near_Vec3b_3channel(color2, color,100,100,100)*/ )
-            if (near_Vec3b_3channel_sub(color2, color,50,10,10) && near_Vec3b_3channel(color2, color,80,80,80) )
+            if (/*is_green(color, 35, 40))//*/near_Vec3b_3channel_sub(color2, color,50,50,50) && near_Vec3b_3channel(color2, color,80,80,80) )
             {
                 if(previous_state == BLANC /*|| state == BLANC*/)
                     state = 3;
@@ -515,48 +464,29 @@ void detectLinePoints (Mat& input, Vec3b color1, Vec3b color2, int slices){
 
             if((state ==3)/* && (light_near (green_found, white_found, color2, color1, 0.2))*/)
             {
-                ptns.push_back(Point(x,y));
                 rectangle(img_out,Rect( Point(x-4,y-4),Point(x+4,y+4) ),Scalar(250,0,0),3);
                 state = UNK;
             }
-
-
-
-            /*else if ( state != 0  )
-            {
-                state = 0;
-                rectangle(img_out,Rect( Point(x-6,y+1),Point(x+6,y+2) ),Scalar(0,0,250),1);
-            }
-
-            //on est passé sur du blanc et du vert, alors on fait le traitement du point
-            if ( (state & VERT)  && (state & BLANC) )
-            {
-                //process
-                state = UNK;
-                ptns.push_back(Point(x,y));
-                rectangle(img_out,Rect( Point(x-4,y-4),Point(x+4,y+4) ),Scalar(250,0,0),3);
-            }*/
-
             y--;
         }
         x-= decalx;
     }
-    draw_affine(img_out, tmp, ptns, Scalar(0,0,230), decalx);
-    img_out= tmp;
-    imshow("Algo", img_out);
 
-    
-    cout<<"rofl"<<endl;
+    //Bug sur bruno video mais fonctionne pour tribot. La fonction n'est pas entierement fonctionnelle
+    //Il reste a gerer les differents niveau de ligne, et debugger 2-3 truc mais 'lidée est la
+  //  draw_affine(img_out, tmp, ptns, Scalar(0,0,230), decalx);
+  //  img_out= tmp;
+    imshow("Algo", img_out);
 }
 
-
+//Peind simplement a l'ecran le blanc, le vert et le reste en noir
 void detectLinePoints_glitch(Mat& input, Vec3b color1, Vec3b color2, int slices){
     int i,x=6,y=6, decalx = input.cols/slices ;
     int state = 0, previous_state = 0;
     Mat img_out = input.clone();
     vector<Point> ptns;
     Vec3b green_found;
-
+    Vec3b blue_found;
     Vec3b white_found;
 
     imshow("Algo", img_out);
@@ -568,31 +498,17 @@ void detectLinePoints_glitch(Mat& input, Vec3b color1, Vec3b color2, int slices)
             previous_state = state;
             state = 0;
             Vec3b color = input.at<Vec3b>(y,x);
-            /*          color[0] = color[0]/2;
-            color[1] = color[1]/2;
-            color[2] = color[2]/2;
-
-            color[0] = (int)color[0] + (int)(input.at<Vec3b>(y+1,x)[0])/2;
-            color[1] = (int)color[0] + (int)(input.at<Vec3b>(y+1,x)[1])/2;
-            color[2] = (int)color[0] +(int)(input.at<Vec3b>(y+1,x)[2]/2);
-*/
             rectangle(img_out,Rect( Point(x-4,y),Point(x+4,y+1) ),Scalar(10,10,10),1);
-            /**
-              * Param  80,80 = near_Vec3b
-              *
-              **/
-            // if(near_Vec3b_3channel_ratio(color1, color,0.30,0.30,0.30) && near_Vec3b_3channel(color1, color,80,80,80))
-            if(near_Vec3b_3channel_sub(color1, color,55,30,30) && near_Vec3b_3channel(color1, color,120,120,120))
+            if(near_Vec3b_3channel_sub(color1, color,70,30,30) && near_Vec3b_3channel(color1, color,120,120,120))
             {
-                if(previous_state == VERT)
+                if(previous_state == VERT || previous_state == BLEU)
                     state = 3;
                 else
                     state=BLANC;
                 white_found = color;
                 rectangle(img_out,Rect( Point(x-4,y),Point(x+4,y+1) ),Scalar(250,250,250),1);
             }
-            //if (near_Vec3b_3channel_ratio(color2, color,1.0,1.00,1.00) /*&& near_Vec3b_3channel(color2, color,100,100,100)*/ )
-            if (near_Vec3b_3channel_sub(color2, color,50,50,20) && near_Vec3b_3channel(color2, color,60,60,60) )
+            if (is_green(color, 35, 40)) //near_Vec3b_3channel_sub(color2, color,100,20,100) /*&& near_Vec3b_3channel(color2, color,120,120,120) */)
             {
                 if(previous_state == BLANC || state == BLANC)
                     state = 3;
@@ -601,11 +517,17 @@ void detectLinePoints_glitch(Mat& input, Vec3b color1, Vec3b color2, int slices)
                 green_found = color;
                 rectangle(img_out,Rect( Point(x-4,y),Point(x+4,y+1) ),Scalar(0,250,0),1);
             }
-
+            if (is_blue(color, 35, 10)) //near_Vec3b_3channel_sub(color2, color,100,20,100) /*&& near_Vec3b_3channel(color2, color,120,120,120) */)
+            {
+                if(previous_state == BLANC || state == BLANC)
+                    state = 3;
+                else
+                    state=BLEU;
+                blue_found = color;
+                rectangle(img_out,Rect( Point(x-4,y),Point(x+4,y+1) ),Scalar(250,0,0),1);
+            }
             if((state ==3)/* && (light_near (green_found, white_found, color2, color1, 0.2))*/)
             {
-                ptns.push_back(Point(x,y));
-                //rectangle(img_out,Rect( Point(x-4,y-4),Point(x+4,y+4) ),Scalar(250,0,0),3);
                 state = 0;
             }
 
@@ -615,27 +537,10 @@ void detectLinePoints_glitch(Mat& input, Vec3b color1, Vec3b color2, int slices)
                 green_found = NULL;
                 white_found = NULL;
             }
-
-            /*else if ( state != 0  )
-            {
-                state = 0;
-                rectangle(img_out,Rect( Point(x-6,y+1),Point(x+6,y+2) ),Scalar(0,0,250),1);
-            }
-
-            //on est passé sur du blanc et du vert, alors on fait le traitement du point
-            if ( (state & VERT)  && (state & BLANC) )
-            {
-                //process
-                state = UNK;
-                ptns.push_back(Point(x,y));
-                rectangle(img_out,Rect( Point(x-4,y-4),Point(x+4,y+4) ),Scalar(250,0,0),3);
-            }*/
-
             y++;
         }
         x+= decalx;
     }
-    //  draw_affine(img_out, img_out, ptns, Scalar(0,0,230));
     imshow("Algocheated", img_out);
 }
 
@@ -645,8 +550,6 @@ int main(int argc, char** argv)
     Mat current_img, current_img_lab, current_img_histo;
 
     namedWindow("edges",1);
-
-
 
     // Verification des arguments
     if ( argc < 2 )
@@ -662,10 +565,8 @@ int main(int argc, char** argv)
 
     Mat c1, c2, c3;
 
-
     while( run )
     {
-
         Mat src, src_gray, src_tmp;
         Mat grad,canny;
         int scale = 1;
@@ -683,8 +584,9 @@ int main(int argc, char** argv)
         //imshow("And", current_img);
 
         // detectLinePoints(current_img,Vec3b(253,253,233),Vec3b(122,212,137),10);
-        detectLinePoints_glitch(current_img,Vec3b(230,230,230),Vec3b(140,180,120), 56);
-        detectLinePoints(current_img,Vec3b(230,230,230),Vec3b(140,180,120), 30);
+       // detectLinePoints_glitch(current_img,Vec3b(230,230,230),Vec3b(140,180,120), 60);
+        detectLinePoints_glitch(current_img,Vec3b(230,230,230),Vec3b(120,160,100), 60);
+        detectLinePoints(current_img,Vec3b(230,230,230),Vec3b(120,180,120), 30);
 
         //   Mat* output = toGray(  current_img_lab, 1 );
         // cvtColor( *output, current_img_lab, CV_BGR2GRAY );// on convertie
@@ -717,11 +619,6 @@ int main(int argc, char** argv)
         addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad );
         
         //threshold( grad, grad, 35,255,CV_THRESH_BINARY);
-
-        
-
-
-
         // current_img_histo = *(applyHistogram(current_img_lab));
         Mat output = *(assHole(grad, 60, 90, 256));
 
