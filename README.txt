@@ -1,7 +1,7 @@
 RobotCupMLP
 ===========
 
-Auteurs : Thibaud Cheippe, Victor Cheimanoff
+Auteurs : Thibaud Cheippe, Victor Cheimanoff, Quentin MAOUHOUB, Florian BOUDINET
 Décembre 2012
 ENSEIRB-MATMECA
 
