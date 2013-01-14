@@ -11,14 +11,6 @@
 using namespace cv;
 using namespace std;
 
-void skip(int pos, void * data)
-{
-  VideoCapture cap = *(VideoCapture *) data;
-  if(pos != cap.get(CV_CAP_PROP_POS_FRAMES)+1)
-    cap.set(CV_CAP_PROP_POS_FRAMES,(double) pos);
-}
-
-
 
 int ballTracking(char*name)
 {
@@ -34,17 +26,17 @@ int ballTracking(char*name)
       fc = cap.get(CV_CAP_PROP_FRAME_COUNT);
 
 
-      namedWindow("video",1);
-      namedWindow("video2",1);
+      namedWindow("video Kalman",1);
+      namedWindow("video Barycentre",1);
 
 
-
+      //Kalman initialisation
       KalmanFilter KF(4, 2, 0);
       KF.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,1,0,   0,1,0,1,  0,0,1,0,  0,0,0,1);
       Mat_<float> measurement(2,1);
       measurement.setTo(Scalar(0));
 
-      // init...
+
       KF.statePre.at<float>(0) = 0;
       KF.statePre.at<float>(1) = 0;
       KF.statePre.at<float>(2) = 0;
@@ -75,7 +67,7 @@ int ballTracking(char*name)
           double y2 = 0;
 
 
-
+          //Pixel detection and getting the barycenter
           for(int i=0;i<edges.rows;i++)
               for(int j=0;j<edges.cols;j++)
               {
@@ -113,9 +105,12 @@ int ballTracking(char*name)
             y2 = y2/n2;
           }
 
+          //drawing ball center
+
           if(n!=0 && n2!=0)
           {
 
+          //if the two barycenter are too close, draw only one ball
           if(std::abs(x-x2) < (n+n2)/10 && std::abs(y-y2) <(n+n2)/10)
           {
 
@@ -130,9 +125,9 @@ int ballTracking(char*name)
 
               }
               if(bary.x >= 20 && bary.y >=20)
-                circle(edges2, bary, 15, Scalar(0,0,255), 2);
+                  circle(edges2, bary, abs(sqrt(n+n2)), Scalar(0,0,255), 2);
           }
-          else
+          else // else draw two balls
           {
           bary.x = x;
           bary.y = y;
@@ -140,9 +135,9 @@ int ballTracking(char*name)
           bary2.x = x2;
           bary2.y = y2;
           if(bary.x >= 20 && bary.y >=20 && n>25)
-            circle(edges2, bary, 15, Scalar(0,0,255), 2);
+            circle(edges2, bary, abs(sqrt(n)), Scalar(0,0,255), 2);
           if(bary2.x >= 20 && bary2.y >=20 && n2>25)
-            circle(edges2, bary2, 15, Scalar(0,0,255), 2);
+            circle(edges2, bary2, abs(sqrt(n2)), Scalar(0,0,255), 2);
            }
            }
           else
@@ -158,20 +153,14 @@ int ballTracking(char*name)
                 n = n2;
               }
             if(bary.x >= 20 && bary.y >=20 && n>25)
-                circle(edges2, bary, 15, Scalar(0,0,255), 2);
+                circle(edges2, bary, abs(sqrt(n)), Scalar(0,0,255), 2);
           }
-          //Kalman filter test http://www.morethantechnical.com/2011/06/17/simple-kalman-filter-for-tracking-using-opencv-2-2-w-code/
 
 
-
-
-
-          // First predict, to update the internal statePre variable
-          //Mat prediction = KF.predict();
+          // Kalman prediction
           KF.predict();
-          //Point predictPt(prediction.at<float>(0),prediction.at<float>(1));
 
-          // Get mouse point
+          //Getting the measurements from the barycenter
           if(bary.x >= 20 && bary.y >=20)
           {
            measurement(0) = bary.x;
@@ -179,22 +168,22 @@ int ballTracking(char*name)
           }
 
 
-          // The "correct" phase that is going to use the predicted value and our measurement
+          // Correcting the predicted value with our measurement
           Mat estimated = KF.correct(measurement);
           Point statePt(estimated.at<float>(0),estimated.at<float>(1));
-            
+          //drawing result
           circle(edges, statePt, 2, Scalar(255,255,255), -1);
-          //kalman filter end
 
 
+          //using dilate and erode to improve result display
           Mat element = getStructuringElement( MORPH_RECT,Size( 3, 3 ),Point( 2, 2 ) );
           dilate(edges, edges,element );
           erode(edges, edges,element );
           dilate(edges, edges,element );
           dilate(edges, edges,element );
 
-          imshow("video", edges);
-          imshow("video2", edges2);
+          imshow("video Kalman", edges);
+          imshow("video Barycentre", edges2);
           if(waitKey(30) >= 0) break;
         }
       return 0;
